@@ -269,14 +269,15 @@ export class CategoryStorage {
     Storage.set(StorageKeys.CATEGORIES, categories);
   }
 
-  static add(category: Omit<Category, 'id' | 'cardCount'>): Category {
+  static add(category: Omit<Category, 'id' | 'cardCount' | 'createdAt'>): Category {
     const categories = this.getAll();
     const newCategory: Category = {
       ...category,
       id: generateId(),
       cardCount: 0,
+      createdAt: new Date(),
     };
-    
+
     categories.push(newCategory);
     this.save(categories);
     return newCategory;

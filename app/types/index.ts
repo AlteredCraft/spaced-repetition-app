@@ -65,6 +65,7 @@ export interface Category {
   color: string;
   description?: string;
   cardCount: number;
+  createdAt: Date;
 }
 
 export enum Difficulty {
