@@ -9,7 +9,9 @@ const navigation = [
   { name: 'Study', href: '/study' },
   { name: 'Cards', href: '/cards' },
   { name: 'Categories', href: '/categories' },
-  { name: 'Statistics', href: '/stats' },
+  { name: 'Stats', href: '/stats' },
+  { name: 'History', href: '/history' },
+  { name: 'Settings', href: '/settings' },
 ];
 
 export function Navigation() {

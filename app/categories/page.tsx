@@ -327,7 +327,7 @@ export default function CategoriesPage() {
 
                 <div className="flex justify-between items-center pt-4 border-t border-border">
                   <span className="text-xs text-muted-foreground">
-                    Created: {new Date().toLocaleDateString()}
+                    Created: {new Date(category.createdAt).toLocaleDateString()}
                   </span>
                   <button
                     onClick={() => window.location.href = `/cards?category=${encodeURIComponent(category.name)}`}

@@ -191,7 +191,7 @@ export class SpacedRepetitionAlgorithm {
   private static updateDailyStats(correct: boolean, responseTime: number): void {
     const today = getTodayString();
     const progress = ProgressStorage.get();
-    
+
     const existingStats = progress.dailyStats.find(s => s.date === today);
     if (existingStats) {
       existingStats.cardsStudied += 1;
@@ -208,17 +208,23 @@ export class SpacedRepetitionAlgorithm {
         newCards: 0, // This would be updated elsewhere when tracking new cards
       });
     }
-    
+
     // Update lifetime stats
     progress.lifetimeStats.totalReviews += 1;
     if (correct) {
       progress.lifetimeStats.correctReviews += 1;
     }
-    progress.lifetimeStats.accuracy = 
-      progress.lifetimeStats.totalReviews > 0 
-        ? (progress.lifetimeStats.correctReviews / progress.lifetimeStats.totalReviews) * 100 
+    progress.lifetimeStats.accuracy =
+      progress.lifetimeStats.totalReviews > 0
+        ? (progress.lifetimeStats.correctReviews / progress.lifetimeStats.totalReviews) * 100
         : 0;
-    
+
+    // Update longest streak
+    const currentStreak = StudyUtils.calculateStudyStreak();
+    if (currentStreak > progress.lifetimeStats.longestStreak) {
+      progress.lifetimeStats.longestStreak = currentStreak;
+    }
+
     ProgressStorage.save(progress);
   }
 
@@ -345,23 +351,51 @@ export class StudyUtils {
    */
   static calculateStudyStreak(): number {
     const progress = ProgressStorage.get();
-    const dailyStats = progress.dailyStats.sort((a, b) => b.date.localeCompare(a.date));
-    
+    if (progress.dailyStats.length === 0) {
+      return 0;
+    }
+
+    // Sort stats by date descending (most recent first)
+    const sortedStats = [...progress.dailyStats].sort((a, b) => b.date.localeCompare(a.date));
+
     let streak = 0;
-    const today = getTodayString();
-    let currentDate = new Date();
-    
-    for (const stats of dailyStats) {
-      const dateStr = formatDate(currentDate);
-      
-      if (stats.date === dateStr && stats.cardsStudied > 0) {
+    const today = new Date();
+    const todayStr = formatDate(today);
+    const yesterdayStr = formatDate(new Date(today.getTime() - 24 * 60 * 60 * 1000));
+
+    // Find the most recent day with activity
+    const mostRecentActivityIndex = sortedStats.findIndex(s => s.cardsStudied > 0);
+    if (mostRecentActivityIndex === -1) {
+      return 0; // No activity at all
+    }
+
+    const mostRecentActivityDate = sortedStats[mostRecentActivityIndex].date;
+
+    // Streak is broken if most recent activity is before yesterday
+    if (mostRecentActivityDate !== todayStr && mostRecentActivityDate !== yesterdayStr) {
+      return 0;
+    }
+
+    // Calculate streak by going backwards from the most recent activity
+    let checkDate = new Date(mostRecentActivityDate);
+
+    for (let i = 0; i < sortedStats.length; i++) {
+      const expectedDateStr = formatDate(checkDate);
+      const statsForDate = sortedStats.find(s => s.date === expectedDateStr);
+
+      if (statsForDate && statsForDate.cardsStudied > 0) {
         streak++;
-        currentDate.setDate(currentDate.getDate() - 1);
+        checkDate.setDate(checkDate.getDate() - 1);
       } else {
+        // If we're at the start and today has no activity yet, that's ok
+        if (i === 0 && expectedDateStr === todayStr) {
+          checkDate.setDate(checkDate.getDate() - 1);
+          continue;
+        }
         break;
       }
     }
-    
+
     return streak;
   }
 }
